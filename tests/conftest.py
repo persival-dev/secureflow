@@ -8,21 +8,20 @@
 """
 import asyncio
 from collections.abc import AsyncGenerator, Generator
-
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
-
 from app.api.deps import get_db_session
 from app.core.config import settings
 from app.db.base import Base
 from app.main import app as fastapi_app
-# Импорт моделей — чтобы они попали в Base.metadata
 from app.models import project, vulnerability  # noqa: F401
-
+import uuid
+from app.core.security import create_access_token, hash_password
+from app.models.user import User, UserRole
 
 # ---------- Test DB URL ----------
 TEST_DB_URL = (
@@ -124,3 +123,53 @@ async def sample_project(db_session: AsyncSession):
     db_session.add(project)
     await db_session.flush()
     return project
+
+# ---------- Auth fixtures ----------
+
+from app.core.security import create_access_token, hash_password
+from app.models.user import User, UserRole
+from app.repositories.user import UserRepository
+
+
+@pytest_asyncio.fixture
+async def test_user(db_session: AsyncSession) -> User:
+    """
+    Юзер в тестовой БД — база для auth_headers.
+
+    SECURITY, а не DEVELOPER: тесты vulnerabilities требуют прав на
+    создание/удаление. RBAC-тесты (test_rbac.py) создают свои
+    роли явно через developer_user/security_user/admin_user.
+    """
+    user = User(
+        email=f"user-{uuid.uuid4().hex[:8]}@example.com",
+        hashed_password=hash_password("TestPassword123!"),
+        full_name="Test User",
+        role=UserRole.SECURITY,      # ← ИЗМЕНЕНО
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.flush()
+    await db_session.refresh(user)
+    return user
+
+
+@pytest_asyncio.fixture
+async def auth_headers(test_user: User) -> dict[str, str]:
+    """Готовый заголовок Authorization."""
+    token = create_access_token(test_user.id)
+    return {"Authorization": f"Bearer {token}"}
+
+@pytest_asyncio.fixture
+async def auth_client(
+    client: AsyncClient,
+    auth_headers: dict[str, str],
+) -> AsyncGenerator[AsyncClient, None]:
+    """
+    httpx-клиент с уже подставленным Authorization.
+
+    Дочерний от `client` — использует ту же ASGI-транспорт, те же
+    dependency_overrides. Просто добавляет headers по умолчанию.
+    """
+    client.headers.update(auth_headers)
+    yield client
+    client.headers.pop("Authorization", None)

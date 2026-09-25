@@ -31,7 +31,7 @@ Vulnerability Management Platform для AppSec-команд: запуск SAST/
 ## 🚀 Быстрый старт
 
 ```bash
-git clone https://github.com/USERNAME/secureflow.git
+git clone https://github.com/persival-dev/secureflow.git
 cd secureflow
 
 # 1. Настрой окружение

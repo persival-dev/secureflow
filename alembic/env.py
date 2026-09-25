@@ -10,7 +10,7 @@ from alembic import context
 # --- Импорт настроек и метаданных моделей ---
 from app.core.config import settings
 from app.db.base import Base
-from app.models import project, vulnerability  # noqa: F401
+from app.models import project, user, vulnerability  # noqa: F401
 # Alembic Config object
 config = context.config
 # Логирование из alembic.ini

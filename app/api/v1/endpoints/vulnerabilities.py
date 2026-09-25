@@ -16,8 +16,10 @@ from app.schemas.vulnerability import (
     VulnerabilityUpdate,
 )
 from app.services.vulnerability import VulnerabilityService
-
+from app.api.deps import CurrentUserDep, DbSessionDep, require_role
+from app.models.user import User, UserRole
 router = APIRouter(prefix="/vulnerabilities", tags=["vulnerabilities"])
+SecurityDep = Annotated[User, Depends(require_role(UserRole.SECURITY, UserRole.ADMIN))]
 
 
 def get_service(
@@ -39,6 +41,7 @@ ServiceDep = Annotated[VulnerabilityService, Depends(get_service)]
 async def create_vulnerability(
     payload: VulnerabilityCreate,
     service: ServiceDep,
+    _: Annotated[User, Depends(require_role(UserRole.SECURITY, UserRole.ADMIN))],
 ) -> VulnerabilityRead:
     try:
         vuln = await service.create(payload)
@@ -54,6 +57,7 @@ async def create_vulnerability(
 )
 async def list_vulnerabilities(
     service: ServiceDep,
+    current_user: CurrentUserDep,
     project_id: uuid.UUID | None = Query(default=None),
     severity: SeverityLevel | None = Query(default=None),
     status_: VulnerabilityStatus | None = Query(default=None, alias="status"),
@@ -83,6 +87,7 @@ async def list_vulnerabilities(
 async def get_vulnerability(
     vuln_id: uuid.UUID,
     service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> VulnerabilityRead:
     vuln = await service.get(vuln_id)
     if vuln is None:
@@ -99,6 +104,7 @@ async def update_vulnerability(
     vuln_id: uuid.UUID,
     payload: VulnerabilityUpdate,
     service: ServiceDep,
+    current_user: CurrentUserDep,
 ) -> VulnerabilityRead:
     vuln = await service.update(vuln_id, payload)
     if vuln is None:
@@ -114,6 +120,7 @@ async def update_vulnerability(
 async def delete_vulnerability(
     vuln_id: uuid.UUID,
     service: ServiceDep,
+    _: Annotated[User, Depends(require_role(UserRole.SECURITY, UserRole.ADMIN))],
 ) -> None:
     deleted = await service.delete(vuln_id)
     if not deleted:

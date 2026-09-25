@@ -16,9 +16,11 @@ services:
   api:
     environment:
       DEBUG: "true"
+
     volumes:
       - ./app:/app/app:ro
-      - ./alembic:/app/alembic:ro
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini:ro
       - ./tests:/app/tests:ro
     command: >
       uvicorn app.main:app

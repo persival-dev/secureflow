@@ -13,7 +13,7 @@ dependencies = [
     "asyncpg>=0.30.0",
     "alembic>=1.14.0",
     "psycopg[binary]>=3.2.0",
-    "python-jose[cryptography]>=3.3.0",
+    "pyjwt>=2.9.0",
     "passlib[bcrypt]>=1.7.4",
     "redis>=5.2.0",
 ]
@@ -42,3 +42,6 @@ target-version = "py312"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+env = [
+    "POSTGRES_HOST=localhost",
+]

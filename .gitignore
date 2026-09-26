@@ -49,3 +49,8 @@ Thumbs.db
 reports/
 *.pdf
 !docs/**/*.pdf
+
+# Scanner output artifacts
+.bandit
+bandit_report.json
+*.sarif

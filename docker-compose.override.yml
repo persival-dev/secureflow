@@ -2,9 +2,13 @@
 # Override для ЛОКАЛЬНОЙ разработки.
 # Автоматически применяется при `docker compose up`.
 # В prod: `docker compose -f docker-compose.yml up`.
+#
+# ⚠️ Здесь ТОЛЬКО dev-специфичное: ports, volumes, hot-reload.
+# Никаких build/environment/depends_on — они в docker-compose.yml.
 # ============================================================
 
 services:
+  # ---------- Порты для локального доступа ----------
   postgres:
     ports:
       - "127.0.0.1:5432:5432"
@@ -13,19 +17,30 @@ services:
     ports:
       - "127.0.0.1:6379:6379"
 
+  # ---------- API: hot-reload + bind-mount ----------
   api:
     environment:
       DEBUG: "true"
-
     volumes:
       - ./app:/app/app:ro
       - ./alembic:/app/alembic
       - ./alembic.ini:/app/alembic.ini:ro
       - ./tests:/app/tests:ro
       - ./scripts:/app/scripts:ro
+      - ./demo:/app/demo:ro
     command: >
       uvicorn app.main:app
       --host 0.0.0.0
       --port 8000
       --reload
       --reload-dir /app/app
+
+  # ---------- Worker: только bind-mount кода ----------
+  # Команда и healthcheck берутся из основного docker-compose.yml.
+  # Hot-reload не делаем — Celery в dev не любит авто-перезагрузку,
+  # после правки кода задачи: docker compose restart worker.
+  worker:
+    volumes:
+      - ./app:/app/app:ro
+      - ./scripts:/app/scripts:ro
+      - ./demo:/app/demo:ro 

@@ -1,6 +1,7 @@
 # ============================================================
 # SecureFlow — базовый docker-compose (prod-подобный)
 # Порты БД/Redis НЕ публикуются. Для dev — override-файл.
+# api и worker используют ОДИН образ (secureflow:latest).
 # ============================================================
 
 name: secureflow
@@ -58,11 +59,13 @@ services:
           memory: 384M
 
   # ---------- FastAPI ----------
+  # build только здесь — Docker соберёт ОДИН образ, worker его переиспользует.
   api:
     build:
       context: .
       dockerfile: docker/Dockerfile
       target: runtime
+    image: secureflow:latest
     container_name: secureflow-api
     restart: unless-stopped
     env_file:
@@ -81,6 +84,42 @@ services:
         condition: service_healthy
     networks:
       - secureflow_net
+
+  # ---------- Celery Worker ----------
+  # image: secureflow:latest — берём тот же образ, что api.
+  # build НЕ указываем: Docker не будет собирать второй образ.
+  worker:
+    image: secureflow:latest
+    container_name: secureflow-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - secureflow_net
+    command: >
+      celery -A app.workers.celery_app.celery_app worker
+      --loglevel=INFO
+      --concurrency=2
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.workers.celery_app.celery_app inspect ping -d celery@$$HOSTNAME --timeout=5 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
 networks:
   secureflow_net:

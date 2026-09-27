@@ -16,6 +16,9 @@ from app.models.user import User, UserRole
 from app.schemas.common import Page
 from app.schemas.scan import ScanCreate, ScanRead
 from app.services.scan import ProjectNotFoundError, ScanService
+from fastapi.responses import HTMLResponse
+
+from app.services.report import ReportService
 
 router = APIRouter(prefix="/scans", tags=["scans"])
 
@@ -105,3 +108,27 @@ async def get_scan(
     if scan is None:
         raise HTTPException(status_code=404, detail="Scan not found")
     return ScanRead.model_validate(scan)
+
+@router.get(
+    "/{scan_id}/report",
+    response_class=HTMLResponse,
+    summary="HTML-отчёт по скану",
+)
+async def get_scan_report(
+    scan_id: uuid.UUID,
+    session: DbSessionDep,
+    current_user: CurrentUserDep,
+) -> HTMLResponse:
+    """
+    Возвращает готовый HTML-отчёт по скану.
+
+    Открывается прямо в браузере. Никаких внешних CDN —
+    работает офлайн и в корпоративных сетях.
+
+    Content-Type: text/html. Сохрани через Ctrl+S если нужен PDF.
+    """
+    service = ReportService(session)
+    html = await service.render_scan_report(scan_id)
+    if html is None:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    return HTMLResponse(content=html)

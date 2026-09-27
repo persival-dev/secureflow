@@ -17,15 +17,16 @@ from datetime import UTC, datetime
 from app.db.worker_session import WorkerSessionLocal
 from app.models.scan import Scan, ScanStatus
 from app.models.vulnerability import Vulnerability
-from app.services.scanner import BanditScanner
+from app.services.scanner import BanditScanner, BaseScanner, SemgrepScanner
 from app.workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
 
 # Маппинг scanner name → класс
-_SCANNERS = {
+_SCANNERS: dict[str, type[BaseScanner]] = {
     "bandit": BanditScanner,
+    "semgrep": SemgrepScanner,
 }
 
 

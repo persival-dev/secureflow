@@ -43,4 +43,4 @@ services:
     volumes:
       - ./app:/app/app:ro
       - ./scripts:/app/scripts:ro
-      - ./demo:/app/demo:ro 
+      - ./demo:/app/demo:ro

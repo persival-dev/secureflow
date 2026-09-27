@@ -126,10 +126,6 @@ async def sample_project(db_session: AsyncSession):
 
 # ---------- Auth fixtures ----------
 
-from app.core.security import create_access_token, hash_password
-from app.models.user import User, UserRole
-from app.repositories.user import UserRepository
-
 
 @pytest_asyncio.fixture
 async def test_user(db_session: AsyncSession) -> User:
@@ -137,14 +133,13 @@ async def test_user(db_session: AsyncSession) -> User:
     Юзер в тестовой БД — база для auth_headers.
 
     SECURITY, а не DEVELOPER: тесты vulnerabilities требуют прав на
-    создание/удаление. RBAC-тесты (test_rbac.py) создают свои
-    роли явно через developer_user/security_user/admin_user.
+    создание/удаление. RBAC-тесты создают свои роли явно.
     """
     user = User(
         email=f"user-{uuid.uuid4().hex[:8]}@example.com",
         hashed_password=hash_password("TestPassword123!"),
         full_name="Test User",
-        role=UserRole.SECURITY,      # ← ИЗМЕНЕНО
+        role=UserRole.SECURITY,
         is_active=True,
     )
     db_session.add(user)
@@ -155,21 +150,54 @@ async def test_user(db_session: AsyncSession) -> User:
 
 @pytest_asyncio.fixture
 async def auth_headers(test_user: User) -> dict[str, str]:
-    """Готовый заголовок Authorization."""
+    """Готовый заголовок Authorization для SECURITY-юзера."""
     token = create_access_token(test_user.id)
     return {"Authorization": f"Bearer {token}"}
+
 
 @pytest_asyncio.fixture
 async def auth_client(
     client: AsyncClient,
     auth_headers: dict[str, str],
 ) -> AsyncGenerator[AsyncClient, None]:
-    """
-    httpx-клиент с уже подставленным Authorization.
-
-    Дочерний от `client` — использует ту же ASGI-транспорт, те же
-    dependency_overrides. Просто добавляет headers по умолчанию.
-    """
+    """httpx-клиент с уже подставленным Authorization."""
     client.headers.update(auth_headers)
     yield client
     client.headers.pop("Authorization", None)
+
+
+# ---------- Role-specific fixtures (для RBAC и test_scans) ----------
+
+
+async def _create_user_with_role(db: AsyncSession, role: UserRole) -> User:
+    """Хелпер: создаёт юзера с указанной ролью."""
+    user = User(
+        email=f"{role.value}-{uuid.uuid4().hex[:8]}@example.com",
+        hashed_password=hash_password("Password123!"),
+        full_name=f"{role.value.title()} User",
+        role=role,
+        is_active=True,
+    )
+    db.add(user)
+    await db.flush()
+    await db.refresh(user)
+    return user
+
+
+@pytest_asyncio.fixture
+async def developer_user(db_session: AsyncSession) -> User:
+    return await _create_user_with_role(db_session, UserRole.DEVELOPER)
+
+
+@pytest_asyncio.fixture
+async def security_user(db_session: AsyncSession) -> User:
+    return await _create_user_with_role(db_session, UserRole.SECURITY)
+
+
+@pytest_asyncio.fixture
+async def admin_user(db_session: AsyncSession) -> User:
+    return await _create_user_with_role(db_session, UserRole.ADMIN)
+
+
+def _headers(user: User) -> dict[str, str]:
+    """Хелпер для тестов: Authorization header для конкретного юзера."""

@@ -16,37 +16,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import create_access_token, hash_password
 from app.models.user import User, UserRole
 
-# ---------- Дополнительные фикстуры для каждой роли ----------
-async def _create_user_with_role(
-    db: AsyncSession, role: UserRole
-) -> User:
-    """Внутренний хелпер: создаёт юзера с указанной ролью."""
-    user = User(
-        email=f"{role.value}-{uuid.uuid4().hex[:8]}@example.com",
-        hashed_password=hash_password("Password123!"),
-        full_name=f"{role.value.title()} User",
-        role=role,
-        is_active=True,
-    )
-    db.add(user)
-    await db.flush()
-    await db.refresh(user)
-    return user
-
-@pytest_asyncio.fixture
-async def developer_user(db_session: AsyncSession) -> User:
-    return await _create_user_with_role(db_session, UserRole.DEVELOPER)
-
-@pytest_asyncio.fixture
-async def security_user(db_session: AsyncSession) -> User:
-    return await _create_user_with_role(db_session, UserRole.SECURITY)
-
-@pytest_asyncio.fixture
-async def admin_user(db_session: AsyncSession) -> User:
-    return await _create_user_with_role(db_session, UserRole.ADMIN)
-
-def _headers(user: User) -> dict[str, str]:
-    return {"Authorization": f"Bearer {create_access_token(user.id)}"}
 
 VALID_PAYLOAD = {
     "title": "Test Vuln",
@@ -54,6 +23,10 @@ VALID_PAYLOAD = {
     "severity": "high",
     "cvss": 8.0,
 }
+
+def _headers(user: User) -> dict[str, str]:
+    """Authorization header для конкретного юзера."""
+    return {"Authorization": f"Bearer {create_access_token(user.id)}"}
 
 # ---------- DEVELOPER: может смотреть, не может создавать/удалять ----------
 @pytest.mark.asyncio

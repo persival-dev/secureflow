@@ -17,7 +17,7 @@ Vulnerability Management Platform для AppSec-команд: запуск SAST/
 - ✅ Тесты с изоляцией (rollback per test)
 - ✅ JWT-аутентификация с ролями (admin/security/developer)
 - ✅ Запуск SAST-сканов (bandit, semgrep) через Celery
-- ⬜ Сканер semgrep
+- ✅ HTML-отчёты с группировкой по severity (Jinja2)
 - ⬜ GitHub webhooks + автоматическое создание issues
 - ⬜ Генерация PDF-отчётов (WeasyPrint)
 - ⬜ Telegram-бот для уведомлений
@@ -79,8 +79,8 @@ API (FastAPI) → Services (бизнес-логика) → Repositories (SQL) �
 ## 🗺 Roadmap
 
 - [x] **Неделя 1** — фундамент: Docker, БД, модели, CRUD API, тесты
-- [x] **Неделя 2 (дни 8–10)** — JWT, RBAC, Celery + Bandit SAST
-- [ ] **Неделя 2 (дни 11–14)** — Semgrep, HTML/PDF-отчёты, CI
+- [x] **Неделя 2 (дни 8–11)** — JWT, RBAC, Celery, Bandit + Semgrep, HTML-отчёты
+- [ ] **Неделя 2 (дни 12–14)** — PDF-отчёты, GitHub Actions CI, ruff/mypy
 - [ ] **Неделя 3** — GitHub webhooks, Celery, Telegram-бот
 - [ ] **Неделя 4** — React-фронт, документация, финал
 

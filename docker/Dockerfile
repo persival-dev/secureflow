@@ -25,7 +25,7 @@ WORKDIR /build
 COPY pyproject.toml ./
 
 RUN pip install --upgrade pip && \
-    pip install ".[scanner]"
+    pip install ".[scanner, reports]"
 
 # ---------- STAGE 2: runtime ----------
 FROM python:3.12-slim AS runtime
@@ -37,6 +37,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libpq5 \
         curl \
+        libpango-1.0-0 \
+        libpangoft2-1.0-0 \
+        libcairo2 \
+        libgdk-pixbuf-2.0-0 \
+        libffi-dev \
+        libjpeg62-turbo \
+        libopenjp2-7 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /opt/venv /opt/venv

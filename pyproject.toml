@@ -36,6 +36,10 @@ dev = [
 scanner = [
     "semgrep>=1.95.0",
 ]
+reports = [
+    "weasyprint>=62.0",
+]
+
 [build-system]
 requires = ["setuptools>=75"]
 build-backend = "setuptools.build_meta"

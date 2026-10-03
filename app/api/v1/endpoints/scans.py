@@ -16,7 +16,7 @@ from app.models.user import User, UserRole
 from app.schemas.common import Page
 from app.schemas.scan import ScanCreate, ScanRead
 from app.services.scan import ProjectNotFoundError, ScanService
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 
 from app.services.report import ReportService
 
@@ -132,3 +132,33 @@ async def get_scan_report(
     if html is None:
         raise HTTPException(status_code=404, detail="Scan not found")
     return HTMLResponse(content=html)
+
+@router.get(
+    "/{scan_id}/report.pdf",
+    response_class=Response,
+    summary="PDF-отчёт по скану",
+)
+async def get_scan_report_pdf(
+    scan_id: uuid.UUID,
+    session: DbSessionDep,
+    current_user: CurrentUserDep,
+) -> Response:
+    service = ReportService(session)
+    try:
+        pdf_bytes = await service.render_scan_report_pdf(scan_id)
+    except RuntimeError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(e),
+        ) from e
+
+    if pdf_bytes is None:
+        raise HTTPException(status_code=404, detail="Scan not found")
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="scan-{scan_id}.pdf"',
+        },
+    )

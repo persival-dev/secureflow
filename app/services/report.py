@@ -16,11 +16,8 @@ from sqlalchemy.orm import selectinload
 from app.models.scan import Scan
 from app.models.vulnerability import Vulnerability
 
-# templates/ лежит рядом с app/ — путь от корня проекта
 _TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 
-# Один Environment на весь процесс. autoescape=True критично —
-# без него пользовательский title уязвимости = XSS в отчёте.
 _env = Environment(
     loader=FileSystemLoader(str(_TEMPLATES_DIR)),
     autoescape=select_autoescape(["html", "xml"]),
@@ -49,17 +46,13 @@ class ReportService:
         vuln_stmt = (
             select(Vulnerability)
             .where(Vulnerability.scan_id == scan_id)
-            # Сначала критичные, потом по CVSS (если есть), потом по дате
             .order_by(
                 Vulnerability.severity.desc(),
                 Vulnerability.created_at.desc(),
             )
         )
         vulnerabilities = list((await self.session.execute(vuln_stmt)).scalars().all())
-
-        # Статистика по severity. Counter — удобно и читаемо.
         severity_counts = Counter(v.severity.value for v in vulnerabilities)
-        # Гарантируем, что все ключи есть (даже с нулями)
         for level in ("critical", "high", "medium", "low", "info"):
             severity_counts.setdefault(level, 0)
 
@@ -71,3 +64,18 @@ class ReportService:
             total=len(vulnerabilities),
             severity_counts=severity_counts,
         )
+    async def render_scan_report_pdf(self, scan_id: uuid.UUID) -> bytes | None:
+        html = await self.render_scan_report(scan_id)
+        if html is None:
+            return None
+        return render_pdf_from_html(html)
+
+def render_pdf_from_html(html: str) -> bytes:
+    try:
+        from weasyprint import HTML
+    except ImportError as e:
+        raise RuntimeError(
+            "WeasyPrint is not installed. "
+            "It's available in Docker via '.[reports]' extra."
+        ) from e
+    return HTML(string=html, base_url=".").write_pdf()

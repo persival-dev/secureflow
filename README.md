@@ -3,6 +3,7 @@
 Vulnerability Management Platform для AppSec-команд: запуск SAST/DAST-сканирований,
 трекинг уязвимостей, интеграции с GitHub и Telegram, отчёты с CVSS.
 
+![CI](https://github.com/persival-dev/secureflow/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/python-3.12-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)

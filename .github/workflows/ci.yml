@@ -1,0 +1,131 @@
+# ============================================================
+# CI: линтеры, типы, тесты.
+# Запускается при push в main и при PR.
+# ============================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Отменяем предыдущий запуск, если пришёл новый push
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------- Lint ----------
+  lint:
+    name: Ruff lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install ruff
+        run: pip install "ruff>=0.7.0"
+
+      - name: Run ruff check
+        run: ruff check app/ tests/
+
+  # ---------- Typecheck ----------
+  typecheck:
+    name: Mypy typecheck
+    runs-on: ubuntu-latest
+    # Пока код не вычищен под mypy strict — падение job'а
+    # не должно ломать общий зелёный статус.
+    # Уберём эту строку в блоке C, когда починим все warnings.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run mypy
+        run: mypy app/ --ignore-missing-imports
+
+  # ---------- Tests ----------
+  test:
+    name: Pytest
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: secureflow
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: secureflow
+        ports:
+          - 5432:5432
+        # Ждём, пока Postgres не станет healthy, прежде чем идти дальше
+        options: >-
+          --health-cmd "pg_isready -U secureflow"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # .env в git не лежит, поэтому все переменные — через env.
+      # Pydantic-settings читает из окружения.
+      POSTGRES_USER: secureflow
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: secureflow
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      REDIS_HOST: localhost
+      REDIS_PORT: "6379"
+      SECRET_KEY: "ci_test_secret_key_must_be_at_least_32_chars_long"
+      ENVIRONMENT: development
+      DEBUG: "true"
+      BACKEND_CORS_ORIGINS: "http://localhost:3000"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          # Все extras: semgrep и weasyprint нужны, потому что
+          # некоторые тесты их импортируют (даже если мокают вызовы).
+          pip install -e ".[dev,scanner,reports]"
+
+      - name: Create test database
+        run: |
+          PGPASSWORD=test_password psql -h localhost -U secureflow -d secureflow \
+            -c "CREATE DATABASE secureflow_test OWNER secureflow;"
+
+      - name: Run tests with coverage
+        run: |
+          pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 7

@@ -8,9 +8,6 @@ import uuid
 import pytest
 from httpx import AsyncClient
 
-from app.models.vulnerability import SeverityLevel, VulnerabilityStatus
-
-
 VALID_PAYLOAD = {
     "title": "SQL Injection in login",
     "description": "User input passed unsanitized to SQL query.",

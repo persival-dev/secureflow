@@ -7,7 +7,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db_session
+from app.api.deps import CurrentUserDep, get_db_session, require_role
+from app.models.user import User, UserRole
 from app.models.vulnerability import SeverityLevel, VulnerabilityStatus
 from app.schemas.common import Page
 from app.schemas.vulnerability import (
@@ -16,8 +17,7 @@ from app.schemas.vulnerability import (
     VulnerabilityUpdate,
 )
 from app.services.vulnerability import VulnerabilityService
-from app.api.deps import CurrentUserDep, DbSessionDep, require_role
-from app.models.user import User, UserRole
+
 router = APIRouter(prefix="/vulnerabilities", tags=["vulnerabilities"])
 SecurityDep = Annotated[User, Depends(require_role(UserRole.SECURITY, UserRole.ADMIN))]
 

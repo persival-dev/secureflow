@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.scan import Scan, ScanStatus
 from app.repositories.base import BaseRepository
-from app.schemas.scan import ScanCreate, ScanCreate
+from app.schemas.scan import ScanCreate
 
 
 class ScanRepository(BaseRepository[Scan, ScanCreate, ScanCreate]):

@@ -12,14 +12,13 @@ from app.models.scan import Scan, ScanStatus
 from app.repositories.project import ProjectRepository
 from app.repositories.scan import ScanRepository
 from app.schemas.scan import ScanCreate
-from app.workers.tasks.scans import run_bandit_scan  # noqa: E402
+from app.workers.tasks.scans import run_bandit_scan
 
 logger = logging.getLogger(__name__)
 
 
 class ProjectNotFoundError(Exception):
     """Проект для скана не найден. На уровне API → 404."""
-    pass
 
 
 class ScanService:

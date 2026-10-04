@@ -11,7 +11,6 @@ from app.api.v1.router import api_router
 from app.core.config import settings
 from app.db.session import engine
 
-
 # ---------- Логирование ----------
 logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,

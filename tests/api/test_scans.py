@@ -10,9 +10,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from httpx import AsyncClient
 
-from app.models.scan import ScanStatus
-
-
 VALID_PAYLOAD_TEMPLATE = {
     "scanner": "bandit",
     "target": "/app/demo/vulnerable_code.py",

@@ -7,20 +7,22 @@
 - httpx.AsyncClient через ASGITransport — без реального HTTP.
 """
 import asyncio
+import uuid
 from collections.abc import AsyncGenerator, Generator
+
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
+
+import app.models.project  # noqa: F401
+import app.models.vulnerability  # noqa: F401
 from app.api.deps import get_db_session
 from app.core.config import settings
+from app.core.security import create_access_token, hash_password
 from app.db.base import Base
 from app.main import app as fastapi_app
-from app.models import project, vulnerability  # noqa: F401
-import uuid
-from app.core.security import create_access_token, hash_password
 from app.models.user import User, UserRole
 
 # ---------- Test DB URL ----------

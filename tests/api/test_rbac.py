@@ -6,16 +6,12 @@
 - SECURITY может всё с уязвимостями.
 - ADMIN может всё + управлять юзерами.
 """
-import uuid
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_access_token, hash_password
-from app.models.user import User, UserRole
-
+from app.core.security import create_access_token
+from app.models.user import User
 
 VALID_PAYLOAD = {
     "title": "Test Vuln",

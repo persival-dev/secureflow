@@ -7,7 +7,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUserDep, DbSessionDep
 from app.schemas.auth import (
@@ -83,8 +82,7 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         ) from e
 
-    tokens = service.create_token_pair(user)
-    return TokenPair(**tokens)
+    return service.create_token_pair(user)
 
 
 @router.post(
@@ -110,7 +108,7 @@ async def refresh(
             detail=str(e),
             headers={"WWW-Authenticate": "Bearer"},
         ) from e
-    return TokenPair(**tokens)
+    return tokens
 
 
 @router.get(

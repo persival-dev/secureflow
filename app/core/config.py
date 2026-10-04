@@ -5,10 +5,12 @@
 секреты окружения в prod). Валидация — при старте приложения.
 """
 from functools import lru_cache
-from typing import Literal
 from typing import Annotated, Literal
-from pydantic_settings import BaseSettings, SettingsConfigDict, NoDecode
+
 from pydantic import Field, SecretStr, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+
+
 class Settings(BaseSettings):
     """
     Единая точка входа для всех настроек приложения.
@@ -103,7 +105,7 @@ def get_settings() -> Settings:
     жизни процесса. В тестах кэш сбрасывается через
     get_settings.cache_clear().
     """
-    return Settings()
+    return Settings() # type: ignore[call-arg]
 
 
 settings = get_settings()

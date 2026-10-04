@@ -18,20 +18,17 @@ from app.core.security import (
 )
 from app.models.user import User
 from app.repositories.user import UserRepository
-from app.schemas.auth import UserCreate
-
+from app.schemas.auth import TokenPair, UserCreate
 
 _DUMMY_HASH = "$2b$12$C6UzMDM.H6dfI/f/IKcEeO8xIbV5HUnWzpKMix4o6nBbh3DJlbLg6"
 
 
 class AuthError(Exception):
     """Базовое исключение auth-слоя. На уровне API превращается в 401."""
-    pass
 
 
 class EmailAlreadyExistsError(AuthError):
     """Email уже занят. На уровне API → 409 Conflict."""
-    pass
 
 
 class InvalidCredentialsError(AuthError):
@@ -41,7 +38,6 @@ class InvalidCredentialsError(AuthError):
      Умышленно НЕ разделяем "email не найден" и "пароль неверный" —
     иначе атакующий собирает базу email через /auth/login.
     """
-    pass
 
 
 class AuthService:
@@ -98,23 +94,23 @@ class AuthService:
         await self.session.commit()
         return user
 
-    def create_token_pair(self, user: User) -> dict[str, str | int]:
+    def create_token_pair(self, user: User) -> TokenPair:
         """
         Создаёт пару access + refresh для юзера.
 
-        Возвращает dict — на уровне API Pydantic-схема TokenPair
-        провалидирует и отдаст клиенту.
+        Возвращает Pydantic-модель — mypy доволен, эндпоинт не делает
+        `TokenPair(**tokens)`, что плохо типизируется.
         """
         access = create_access_token(user.id)
         refresh = create_refresh_token(user.id)
-        return {
-            "access_token": access,
-            "refresh_token": refresh,
-            "token_type": "bearer",
-            "expires_in": 60 * 15,  # 15 минут в секундах (соответствует settings)
-        }
+        return TokenPair(
+            access_token=access,
+            refresh_token=refresh,
+            token_type="bearer",
+            expires_in=60 * 15,
+        )
 
-    async def refresh_tokens(self, refresh_token: str) -> tuple[User, dict]:
+    async def refresh_tokens(self, refresh_token: str) -> tuple[User, TokenPair]:
         """
         Обновляет пару токенов по refresh-токену.
 

@@ -18,7 +18,6 @@ from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 
-
 worker_engine: AsyncEngine = create_async_engine(
     settings.DATABASE_URL,
     echo=False,

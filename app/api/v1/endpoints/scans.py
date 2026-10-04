@@ -9,16 +9,15 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import HTMLResponse, Response
 
 from app.api.deps import CurrentUserDep, DbSessionDep, require_role
 from app.models.scan import ScanStatus
 from app.models.user import User, UserRole
 from app.schemas.common import Page
 from app.schemas.scan import ScanCreate, ScanRead
-from app.services.scan import ProjectNotFoundError, ScanService
-from fastapi.responses import HTMLResponse, Response
-
 from app.services.report import ReportService
+from app.services.scan import ProjectNotFoundError, ScanService
 
 router = APIRouter(prefix="/scans", tags=["scans"])
 

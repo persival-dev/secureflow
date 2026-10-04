@@ -8,7 +8,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.repositories.user import UserRepository
 from app.schemas.auth import UserUpdate
 
@@ -24,7 +24,6 @@ class CannotModifySelfError(Exception):
 
     Правильнее — сделать второго админа, потом менять себя.
     """
-    pass
 
 
 class UserService:

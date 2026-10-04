@@ -5,7 +5,7 @@
 будет 10 моделей — этот класс сэкономит сотни строк.
 """
 import uuid
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -45,7 +45,7 @@ class BaseRepository(Generic[ModelT, CreateT, UpdateT]):
         """
         stmt = (
             select(self.model)
-            .order_by(self.model.created_at.desc())
+            .order_by(self.model.created_at.desc())   # type: ignore[attr-defined]
             .limit(limit)
             .offset(offset)
         )

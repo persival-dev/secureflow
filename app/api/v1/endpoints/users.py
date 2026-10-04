@@ -7,7 +7,6 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import DbSessionDep, require_role
 from app.models.user import User, UserRole

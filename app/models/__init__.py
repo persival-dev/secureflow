@@ -17,9 +17,9 @@ __all__ = [
     "Project",
     "Scan",
     "ScanStatus",
+    "SeverityLevel",
     "User",
     "UserRole",
     "Vulnerability",
-    "SeverityLevel",
     "VulnerabilityStatus",
 ]

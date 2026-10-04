@@ -32,10 +32,10 @@ async def ready(db: AsyncSession = Depends(get_db)) -> dict[str, str]:
     """
     try:
         await db.execute(text("SELECT 1"))
-    except Exception:
+    except Exception as exc:
         from fastapi import HTTPException
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="database unavailable",
-        )
+        ) from exc
     return {"status": "ready", "database": "ok"}

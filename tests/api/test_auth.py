@@ -2,9 +2,13 @@
 Тесты аутентификации: регистрация, логин, refresh, /me.
 """
 import uuid
+
 import pytest
 from httpx import AsyncClient
+
 from app.core.security import create_access_token, create_refresh_token
+
+
 # ---------- /auth/register ----------
 @pytest.mark.asyncio
 async def test_register_creates_user(client: AsyncClient) -> None:

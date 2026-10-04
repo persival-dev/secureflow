@@ -5,10 +5,13 @@
 Один проект = один репозиторий/сервис/модуль.
 """
 from typing import TYPE_CHECKING
+
 from sqlalchemy import String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.base import Base
 from app.models.mixins import TimestampMixin, UUIDMixin
+
 if TYPE_CHECKING:
     from app.models.vulnerability import Vulnerability
 class Project(UUIDMixin, TimestampMixin, Base):

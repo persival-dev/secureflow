@@ -10,8 +10,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.models.vulnerability import SeverityLevel
-from app.services.scanner import SemgrepScanner, ScannerError
-
+from app.services.scanner import ScannerError, SemgrepScanner
 
 # Пример реального вывода semgrep (упрощён до ключевых полей)
 SAMPLE_SEMGREP_JSON = {
@@ -26,7 +25,8 @@ SAMPLE_SEMGREP_JSON = {
                 "severity": "WARNING",
                 "metadata": {
                     "cwe": [
-                        "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code"
+                        "CWE-95: Improper Neutralization of Directives "
+                        "in Dynamically Evaluated Code",
                     ],
                     "references": ["https://owasp.org/..."],
                 },

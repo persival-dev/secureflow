@@ -11,7 +11,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.scan import ScanStatus
 
-
 ScannerName = Literal["bandit", "semgrep", "zap"]
 
 

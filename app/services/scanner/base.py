@@ -28,7 +28,6 @@ class ScanFinding:
 
 class ScannerError(Exception):
     """Ошибка сканера: не найден target, упал subprocess, битый JSON."""
-    pass
 
 
 class BaseScanner:

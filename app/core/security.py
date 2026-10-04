@@ -15,7 +15,6 @@ from jwt.exceptions import InvalidTokenError
 
 from app.core.config import settings
 
-
 # ---------- Константы ----------
 TokenType = Literal["access", "refresh"]
 
@@ -143,14 +142,11 @@ def decode_token(token: str, expected_type: TokenType | None = None) -> dict[str
      Не ловим исключения здесь — вызывающий код решает, что делать
     (обычно — вернуть 401). Это правильное разделение ответственности.
     """
-    try:
-        payload = jwt.decode(
-            token,
-            settings.SECRET_KEY.get_secret_value(),
-            algorithms=[settings.ALGORITHM],
-        )
-    except InvalidTokenError:
-        raise
+    payload = jwt.decode(
+        token,
+        settings.SECRET_KEY.get_secret_value(),
+        algorithms=[settings.ALGORITHM],
+    )
 
     if expected_type is not None and payload.get("type") != expected_type:
         raise InvalidTokenError(

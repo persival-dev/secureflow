@@ -1,33 +1,4 @@
 """
-Общие зависимости FastAPI.
-"""
-from collections.abc import AsyncGenerator
-from typing import Annotated
-
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.db.session import AsyncSessionLocal
-
-
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    """
-    Выдаёт AsyncSession на время запроса.
-
-    Коммит — в сервисе, не здесь. Здесь только rollback при исключении.
-    """
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        except Exception:
-            await session.rollback()
-            raise
-
-
-DbSessionDep = Annotated[AsyncSession, Depends(get_db_session)]
-
-
-"""
 Общие зависимости FastAPI: DB session, current user, RBAC.
 """
 import uuid
@@ -42,7 +13,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import decode_token
 from app.db.session import AsyncSessionLocal
 from app.models.user import User
-from app.repositories.user import UserRepository
 
 
 # ---------- DB ----------
@@ -111,10 +81,9 @@ CurrentUserDep = Annotated[User, Depends(get_current_user)]
 
 
 # ---------- RBAC ----------
-from collections.abc import Callable  # noqa: E402
+from collections.abc import Callable
 
-from app.models.user import UserRole  # noqa: E402
-
+from app.models.user import UserRole
 
 _ROLE_HIERARCHY = {
     UserRole.DEVELOPER: 1,

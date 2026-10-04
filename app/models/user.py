@@ -8,16 +8,13 @@
 """
 import enum
 from datetime import datetime
-from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Enum as SAEnum, String
+from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 from app.models.mixins import TimestampMixin, UUIDMixin
-
-if TYPE_CHECKING:
-    pass
 
 
 class UserRole(str, enum.Enum):

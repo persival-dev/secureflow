@@ -32,7 +32,12 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = Field(default="SecureFlow")
     ENVIRONMENT: Literal["development", "staging", "production"] = Field(default="development")
     DEBUG: bool = Field(default=False)
-
+    # ---------- GitHub Webhooks ----------
+    GITHUB_WEBHOOK_SECRET: SecretStr | None = None
+    # ---------- Telegram ----------
+    TELEGRAM_BOT_TOKEN: SecretStr | None = None
+    TELEGRAM_CHAT_ID: str | None = None
+    TELEGRAM_ENABLED: bool = False
     # ---------- PostgreSQL ----------
     POSTGRES_USER: str
     POSTGRES_PASSWORD: SecretStr  # маскируется в логах и repr()

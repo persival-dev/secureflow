@@ -34,6 +34,18 @@ class Project(UUIDMixin, TimestampMixin, Base):
         nullable=True,
         comment="Опциональное описание проекта",
     )
+    github_repo: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        unique=True,
+        index=True,
+        comment="GitHub repo в формате 'org/repo'. Используется для webhook'ов.",
+    )
+    default_target: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+        comment="Путь внутри worker-контейнера для сканирования по webhook'у",
+    )
     vulnerabilities: Mapped[list["Vulnerability"]] = relationship(
         back_populates="project",
         cascade="all, delete-orphan",

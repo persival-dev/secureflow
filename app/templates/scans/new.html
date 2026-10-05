@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Новый скан — SecureFlow{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="/ui/scans" class="text-decoration-none small">
+        <i class="bi bi-arrow-left"></i> Назад к сканам
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h1 class="h4 mb-4">
+                    <i class="bi bi-play-circle"></i> Запустить скан
+                </h1>
+
+                {% if error %}
+                <div class="alert alert-danger py-2 small">{{ error }}</div>
+                {% endif %}
+
+                <form method="post" action="/ui/scans/create">
+                    <div class="mb-3">
+                        <label class="form-label">Проект</label>
+                        <select name="project_id" class="form-select" required>
+                            <option value="" disabled selected>— выберите —</option>
+                            {% for p in projects %}
+                            <option value="{{ p.id }}">{{ p.slug }} — {{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Сканер</label>
+                        <select name="scanner" class="form-select" required>
+                            {% for s in scanners %}
+                            <option value="{{ s }}">{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Target</label>
+                        <input type="text" name="target" class="form-control"
+                               value="{{ default_target }}" required>
+                        <div class="form-text">
+                            Путь внутри worker-контейнера. Например:
+                            <code>/app/demo/vulnerable_code.py</code>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-play-fill"></i> Запустить
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

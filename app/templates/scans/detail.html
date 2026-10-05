@@ -2,11 +2,25 @@
 {% block title %}Скан {{ scan.id }} — SecureFlow{% endblock %}
 
 {% block content %}
+{% if scan.status.value in ("pending", "running") %}
+<meta http-equiv="refresh" content="3">
+{% endif %}
+
 <div class="mb-3">
     <a href="/ui/scans" class="text-decoration-none small">
         <i class="bi bi-arrow-left"></i> Назад к сканам
     </a>
 </div>
+
+{% if scan.status.value in ("pending", "running") %}
+<div class="alert alert-info d-flex align-items-center gap-2">
+    <div class="spinner-border spinner-border-sm" role="status"></div>
+    <div>
+        <strong>Скан выполняется…</strong>
+        <span class="text-muted small">Страница обновится автоматически через 3 секунды.</span>
+    </div>
+</div>
+{% endif %}
 
 <div class="card shadow-sm mb-4">
     <div class="card-body">
@@ -20,7 +34,13 @@
             {% elif scan.status.value == "failed" %}
                 <span class="badge bg-danger fs-6">failed</span>
             {% elif scan.status.value == "running" %}
-                <span class="badge bg-warning text-dark fs-6">running</span>
+                <span class="badge bg-warning text-dark fs-6">
+                    <span class="spinner-border spinner-border-sm me-1"
+                          style="width:.7rem;height:.7rem;border-width:.15em;"></span>
+                    running
+                </span>
+            {% elif scan.status.value == "pending" %}
+                <span class="badge bg-secondary fs-6">pending</span>
             {% else %}
                 <span class="badge bg-secondary fs-6">{{ scan.status.value }}</span>
             {% endif %}
@@ -77,9 +97,14 @@
     <span class="badge bg-secondary">{{ vulnerabilities|length }}</span>
 </h2>
 
-{% if not vulnerabilities %}
+{% if scan.status.value in ("pending", "running") %}
+    <div class="alert alert-secondary">
+        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+        Сканирование в процессе — уязвимости появятся после завершения.
+    </div>
+{% elif not vulnerabilities %}
     <div class="alert alert-success">
-        <i class="bi bi-check-circle"></i> Уязвимостей не найдено.
+        <i class="bi bi-check-circle"></i> Уязвимостей не найдено. Чисто!
     </div>
 {% else %}
     <div class="d-flex flex-column gap-2">
@@ -101,11 +126,11 @@
                         {% endif %}
                         {{ v.title }}
                     </h3>
-                    {% if v.cwe_id %}
+                    {% if v.cwe %}
                     <span class="badge bg-light text-dark border">
-                        <a href="https://cwe.mitre.org/data/definitions/{{ v.cwe_id|replace('CWE-', '') }}.html"
+                        <a href="https://cwe.mitre.org/data/definitions/{{ v.cwe|replace('CWE-', '') }}.html"
                            class="text-decoration-none text-dark" target="_blank">
-                            {{ v.cwe_id }}
+                            {{ v.cwe }}
                         </a>
                     </span>
                     {% endif %}

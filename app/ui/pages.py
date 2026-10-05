@@ -1,5 +1,6 @@
 """UI-страницы: login, список сканов, деталка."""
 
+import logging
 import uuid
 
 from fastapi import APIRouter, Form, HTTPException, Request, status
@@ -10,15 +11,21 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import DbSessionDep
 from app.core.config import settings
-from app.core.security import verify_password
+from app.core.security import create_access_token, verify_password
+from app.models.project import Project
 from app.models.scan import Scan
 from app.models.vulnerability import Vulnerability
 from app.repositories.scan import ScanRepository
 from app.repositories.user import UserRepository
+from app.schemas.scan import ScanCreate
+from app.services.scan import ScanService
 from app.ui.deps import COOKIE_NAME, CurrentUserDep
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+
 
 # ---------- Login ----------
 
@@ -41,13 +48,12 @@ async def login_submit(
     user_repo = UserRepository(session)
     user = await user_repo.get_by_email(email)
 
-    # Одинаковая ошибка для «нет юзера» и «неверный пароль» — anti-enumeration
     # Одинаковая ошибка для «нет юзера», «неверный пароль» и «inactive» —
     # anti-enumeration: нельзя узнать, существует ли email
     if (
-            user is None
-            or not user.is_active
-            or not verify_password(password, user.hashed_password)
+        user is None
+        or not user.is_active
+        or not verify_password(password, user.hashed_password)
     ):
         return templates.TemplateResponse(
             request=request,
@@ -55,18 +61,17 @@ async def login_submit(
             context={"error": "Неверный email или пароль"},
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
-    # Создаём access-токен тем же кодом, что и в API
-    from app.core.security import create_access_token  # локально — избегаем циклов
+
     token = create_access_token(subject=str(user.id))
 
     response = RedirectResponse(url="/ui/scans", status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(
         key=COOKIE_NAME,
         value=token,
-        httponly=True,   # нельзя прочитать из JS — защита от XSS
-        samesite="lax",  # CSRF-защита для навигации
+        httponly=True,          # нельзя прочитать из JS — защита от XSS
+        samesite="lax",         # CSRF-защита для навигации
         secure=not settings.DEBUG,  # True в проде (только HTTPS)
-        max_age=15 * 60,  # 15 минут — как access-токен
+        max_age=15 * 60,        # 15 минут — как access-токен
     )
     return response
 
@@ -78,12 +83,14 @@ async def logout() -> RedirectResponse:
     return response
 
 
-# ---------- Scans ----------
+# ---------- Root ----------
 
 @router.get("/", response_class=HTMLResponse)
 async def root() -> RedirectResponse:
     return RedirectResponse(url="/ui/scans", status_code=status.HTTP_303_SEE_OTHER)
 
+
+# ---------- Scans: list ----------
 
 @router.get("/scans", response_class=HTMLResponse)
 async def scans_list(
@@ -101,6 +108,101 @@ async def scans_list(
     )
 
 
+# ---------- Scans: create (СТАВИМ ВЫШЕ /scans/{scan_id}!) ----------
+
+@router.get("/scans/create", response_class=HTMLResponse)
+async def scan_new_page(
+    request: Request,
+    session: DbSessionDep,
+    user: CurrentUserDep,
+) -> HTMLResponse:
+    """Форма создания нового скана."""
+    projects = list(
+        (await session.execute(select(Project).order_by(Project.slug)))
+        .scalars()
+        .all()
+    )
+    return templates.TemplateResponse(
+        request=request,
+        name="scans/new.html",
+        context={
+            "user": user,
+            "projects": projects,
+            "scanners": ["bandit", "semgrep"],
+            "default_target": "/app/demo/vulnerable_code.py",
+            "error": None,
+        },
+    )
+
+
+@router.post("/scans/create", response_model=None)
+async def scan_new_submit(
+    request: Request,
+    session: DbSessionDep,
+    user: CurrentUserDep,
+    project_id: str = Form(...),
+    scanner: str = Form(...),
+    target: str = Form(...),
+):
+    """Создаёт скан и редиректит на его деталку."""
+    try:
+        scan_uuid = uuid.UUID(project_id)
+    except ValueError:
+        projects = list(
+            (await session.execute(select(Project).order_by(Project.slug)))
+            .scalars()
+            .all()
+        )
+        return templates.TemplateResponse(
+            request=request,
+            name="scans/new.html",
+            context={
+                "user": user,
+                "projects": projects,
+                "scanners": ["bandit", "semgrep"],
+                "default_target": target,
+                "error": "Некорректный ID проекта",
+            },
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    scan_service = ScanService(session)
+    try:
+        scan = await scan_service.create_and_dispatch(
+            ScanCreate(
+                project_id=scan_uuid,
+                scanner=scanner,  # type: ignore[arg-type]
+                target=target,
+            )
+        )
+    except Exception as exc:
+        logger.exception("Failed to create scan from UI: %s", exc)
+        projects = list(
+            (await session.execute(select(Project).order_by(Project.slug)))
+            .scalars()
+            .all()
+        )
+        return templates.TemplateResponse(
+            request=request,
+            name="scans/new.html",
+            context={
+                "user": user,
+                "projects": projects,
+                "scanners": ["bandit", "semgrep"],
+                "default_target": target,
+                "error": f"Не удалось создать скан: {exc}",
+            },
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    return RedirectResponse(
+        url=f"/ui/scans/{scan.id}",
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+# ---------- Scans: detail (В САМОМ КОНЦЕ — иначе съест /scans/create!) ----------
+
 @router.get("/scans/{scan_id}", response_class=HTMLResponse)
 async def scan_detail(
     request: Request,
@@ -109,7 +211,6 @@ async def scan_detail(
     scan_id: uuid.UUID,
 ) -> HTMLResponse:
     """Деталка скана: метаданные + список уязвимостей."""
-    # Скан с подгруженным project (иначе scan.project.slug упадёт в шаблоне)
     scan_stmt = (
         select(Scan)
         .options(selectinload(Scan.project))
@@ -119,7 +220,6 @@ async def scan_detail(
     if scan is None:
         raise HTTPException(status_code=404, detail="Scan not found")
 
-    # Уязвимости этого скана, отсортированные по severity (critical → info)
     vuln_stmt = (
         select(Vulnerability)
         .where(Vulnerability.scan_id == scan_id)

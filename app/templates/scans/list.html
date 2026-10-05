@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Сканы — SecureFlow{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Сканы</h1>
+    <a class="btn btn-primary" href="#">
+        <i class="bi bi-play-fill"></i> Запустить скан
+    </a>
+</div>
+
+{% if not scans %}
+    <div class="alert alert-info">Пока нет ни одного скана.</div>
+{% else %}
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Статус</th>
+                        <th>Проект</th>
+                        <th>Сканер</th>
+                        <th>Target</th>
+                        <th class="text-end">Findings</th>
+                        <th>Создан</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for scan in scans %}
+                    <tr>
+                        <td>
+                            {% if scan.status.value == "success" %}
+                                <span class="badge bg-success">success</span>
+                            {% elif scan.status.value == "failed" %}
+                                <span class="badge bg-danger">failed</span>
+                            {% elif scan.status.value == "running" %}
+                                <span class="badge bg-warning text-dark">running</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ scan.status.value }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <code>{{ scan.project.slug if scan.project else "—" }}</code>
+                        </td>
+                        <td><code>{{ scan.scanner }}</code></td>
+                        <td><small class="text-muted">{{ scan.target }}</small></td>
+                        <td class="text-end"><strong>{{ scan.findings_count }}</strong></td>
+                        <td><small>{{ scan.created_at.strftime("%Y-%m-%d %H:%M") }}</small></td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-secondary"
+                               href="/ui/scans/{{ scan.id }}">
+                                Открыть
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

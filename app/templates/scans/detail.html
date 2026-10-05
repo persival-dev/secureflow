@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Скан {{ scan.id }} — SecureFlow{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="/ui/scans" class="text-decoration-none small">
+        <i class="bi bi-arrow-left"></i> Назад к сканам
+    </a>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <h1 class="h4 mb-0">
+                <i class="bi bi-search"></i> Скан
+                <code class="text-muted small">{{ scan.id }}</code>
+            </h1>
+            {% if scan.status.value == "success" %}
+                <span class="badge bg-success fs-6">success</span>
+            {% elif scan.status.value == "failed" %}
+                <span class="badge bg-danger fs-6">failed</span>
+            {% elif scan.status.value == "running" %}
+                <span class="badge bg-warning text-dark fs-6">running</span>
+            {% else %}
+                <span class="badge bg-secondary fs-6">{{ scan.status.value }}</span>
+            {% endif %}
+        </div>
+
+        <div class="row g-3 small">
+            <div class="col-md-6">
+                <div class="text-muted">Проект</div>
+                <code>{{ scan.project.slug if scan.project else "—" }}</code>
+            </div>
+            <div class="col-md-6">
+                <div class="text-muted">Сканер</div>
+                <code>{{ scan.scanner }}</code>
+            </div>
+            <div class="col-md-12">
+                <div class="text-muted">Target</div>
+                <code>{{ scan.target }}</code>
+            </div>
+            <div class="col-md-6">
+                <div class="text-muted">Создан</div>
+                {{ scan.created_at.strftime("%Y-%m-%d %H:%M:%S") }}
+            </div>
+            <div class="col-md-6">
+                <div class="text-muted">Завершён</div>
+                {% if scan.finished_at %}
+                    {{ scan.finished_at.strftime("%Y-%m-%d %H:%M:%S") }}
+                {% else %}
+                    —
+                {% endif %}
+            </div>
+            {% if scan.error_message %}
+            <div class="col-md-12">
+                <div class="text-muted">Ошибка</div>
+                <div class="alert alert-danger py-2 mb-0 small">{{ scan.error_message }}</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <hr>
+
+        <div class="d-flex gap-2">
+            <a class="btn btn-sm btn-outline-primary" href="/api/v1/scans/{{ scan.id }}/report" target="_blank">
+                <i class="bi bi-file-earmark-text"></i> HTML-отчёт
+            </a>
+            <a class="btn btn-sm btn-outline-primary" href="/api/v1/scans/{{ scan.id }}/report.pdf" target="_blank">
+                <i class="bi bi-file-earmark-pdf"></i> PDF-отчёт
+            </a>
+        </div>
+    </div>
+</div>
+
+<h2 class="h5 mb-3">
+    <i class="bi bi-bug"></i> Уязвимости
+    <span class="badge bg-secondary">{{ vulnerabilities|length }}</span>
+</h2>
+
+{% if not vulnerabilities %}
+    <div class="alert alert-success">
+        <i class="bi bi-check-circle"></i> Уязвимостей не найдено.
+    </div>
+{% else %}
+    <div class="d-flex flex-column gap-2">
+        {% for v in vulnerabilities %}
+        <div class="card card-scan shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h3 class="h6 mb-0">
+                        {% if v.severity.value == "critical" %}
+                            <span class="badge bg-danger">CRITICAL</span>
+                        {% elif v.severity.value == "high" %}
+                            <span class="badge" style="background:#fd7e14;">HIGH</span>
+                        {% elif v.severity.value == "medium" %}
+                            <span class="badge bg-warning text-dark">MEDIUM</span>
+                        {% elif v.severity.value == "low" %}
+                            <span class="badge bg-info text-dark">LOW</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ v.severity.value|upper }}</span>
+                        {% endif %}
+                        {{ v.title }}
+                    </h3>
+                    {% if v.cwe_id %}
+                    <span class="badge bg-light text-dark border">
+                        <a href="https://cwe.mitre.org/data/definitions/{{ v.cwe_id|replace('CWE-', '') }}.html"
+                           class="text-decoration-none text-dark" target="_blank">
+                            {{ v.cwe_id }}
+                        </a>
+                    </span>
+                    {% endif %}
+                </div>
+
+                {% if v.description %}
+                <p class="text-muted small mb-2">{{ v.description }}</p>
+                {% endif %}
+
+                <div class="d-flex gap-3 small text-muted">
+                    {% if v.file_path %}
+                    <span><i class="bi bi-file-earmark-code"></i> <code>{{ v.file_path }}</code></span>
+                    {% endif %}
+                    {% if v.line_number %}
+                    <span><i class="bi bi-hash"></i> строка {{ v.line_number }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}

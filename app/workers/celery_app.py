@@ -19,6 +19,7 @@ celery_app = Celery(
     backend=settings.REDIS_URL,
     include=[
         "app.workers.tasks.scans",
+        "app.workers.tasks.notifications",
     ],
 )
 

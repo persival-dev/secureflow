@@ -107,6 +107,12 @@ async def _run_scan_async(scan_id: uuid.UUID, celery_task_id: str) -> dict:
         await session.commit()
 
         logger.info("Scan %s done: %d findings", scan_id, len(findings))
+
+        # 7. Отправляем уведомление в Telegram (через отдельную задачу)
+        #    .delay() — асинхронная отправка, не блокируем завершение скана
+        from app.workers.tasks.notifications import notify_scan_completed
+        notify_scan_completed.delay(str(scan.id))
+
         return {"status": "success", "findings": len(findings)}
 
 

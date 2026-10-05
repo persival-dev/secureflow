@@ -21,7 +21,11 @@ Vulnerability Management Platform для AppSec-команд: запуск SAST/
 - ✅ HTML-отчёты с группировкой по severity (Jinja2)
 - ✅ PDF-отчёты через WeasyPrint
 - ✅ CI: ruff + mypy + pytest на каждый push
-- ⬜ Telegram-бот для уведомлений
+- ✅ Telegram-уведомления о завершении сканов
+- ⚠️ **Ограничение:** Telegram API заблокирован в РФ.
+      В Docker-контейнере требуется HTTP-прокси (`HTTPS_PROXY`).
+      Код работает из коробки при развёртывании вне РФ.
+      Локально протестирован с `TELEGRAM_ENABLED=false`.
 
 ## 🛠 Стек
 
@@ -82,7 +86,7 @@ API (FastAPI) → Services (бизнес-логика) → Repositories (SQL) �
 - [x] **Неделя 1** — фундамент: Docker, БД, модели, CRUD API, тесты
 - [x] **Неделя 2 (дни 8–11)** — JWT, RBAC, Celery, Bandit + Semgrep, HTML-отчёты
 - [x] **Неделя 2 (дни 8–12)** — JWT, RBAC, Celery, Bandit + Semgrep, HTML/PDF-отчёты, CI
-- [ ] **Неделя 3 (дни 13–14)** — GitHub webhooks, Telegram-бот, фронтенд
+- [x] **Неделя 3** — GitHub webhooks + HMAC, Telegram-уведомления
 - [ ] **Неделя 4** — React-фронт, документация, финал
 
 ## 📄 Лицензия

@@ -8,14 +8,15 @@ import asyncio
 import logging
 import uuid
 
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+
 from app.db.worker_session import WorkerSessionLocal
 from app.models.scan import Scan, ScanStatus
 from app.models.vulnerability import SeverityLevel, Vulnerability
 from app.services.notification import NotificationService
 from app.workers.celery_app import celery_app
 
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 logger = logging.getLogger(__name__)
 
 
@@ -60,7 +61,6 @@ async def _notify_scan_completed_async(scan_id: uuid.UUID) -> dict:
         if scan is None:
             logger.warning("Scan %s not found for notification", scan_id)
             return {"status": "skipped", "reason": "scan not found", "sent": False}
-        ...
 
         # Формируем текст сообщения
         text = await _format_scan_message(session, scan)

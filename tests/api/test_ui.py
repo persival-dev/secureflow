@@ -107,3 +107,31 @@ async def test_ui_report_without_auth_returns_401(
     """GET /ui/scans/{id}/report без cookie → 401."""
     response = await client.get(f"/ui/scans/{sample_scan.id}/report")
     assert response.status_code == 401
+
+# ---------- Reports (cookie-auth proxy) ----------
+
+async def test_ui_report_html_with_auth(
+    client: AsyncClient, test_user: User, sample_scan
+) -> None:
+    """GET /ui/scans/{id}/report с cookie → 200 HTML."""
+    client.cookies.update(_auth_cookie(test_user))
+    response = await client.get(f"/ui/scans/{sample_scan.id}/report")
+    assert response.status_code == 200, response.text
+    assert "text/html" in response.headers["content-type"]
+
+
+async def test_ui_report_without_auth_returns_401(
+    client: AsyncClient, sample_scan
+) -> None:
+    """GET /ui/scans/{id}/report без cookie → 401."""
+    response = await client.get(f"/ui/scans/{sample_scan.id}/report")
+    assert response.status_code == 401
+
+
+async def test_ui_report_missing_scan_returns_404(
+    client: AsyncClient, test_user: User
+) -> None:
+    """GET /ui/scans/{несуществующий uuid}/report → 404."""
+    client.cookies.update(_auth_cookie(test_user))
+    response = await client.get(f"/ui/scans/{uuid.uuid4()}/report")
+    assert response.status_code == 404

@@ -126,6 +126,28 @@ async def sample_project(db_session: AsyncSession):
     await db_session.flush()
     return project
 
+
+@pytest_asyncio.fixture
+async def sample_scan(db_session: AsyncSession, sample_project):
+    """Создаёт успешный скан для тестов отчётов и UI-деталки."""
+    from datetime import UTC, datetime
+
+    from app.models.scan import Scan, ScanStatus
+
+    now = datetime.now(UTC)
+    scan = Scan(
+        project_id=sample_project.id,
+        scanner="bandit",
+        target="/app/demo/vulnerable_code.py",
+        status=ScanStatus.SUCCESS,
+        findings_count=0,
+        started_at=now,
+        finished_at=now,
+    )
+    db_session.add(scan)
+    await db_session.flush()
+    await db_session.refresh(scan)
+    return scan
 # ---------- Auth fixtures ----------
 
 

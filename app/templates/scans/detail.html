@@ -25,9 +25,17 @@
 <div class="card shadow-sm mb-4">
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-start mb-3">
-            <h1 class="h4 mb-0">
+            <h1 class="h4 mb-0 d-flex align-items-center gap-2">
                 <i class="bi bi-search"></i> Скан
                 <code class="text-muted small">{{ scan.id }}</code>
+                <button class="btn btn-sm btn-outline-secondary border-0 py-0 px-1"
+                        type="button"
+                        onclick="navigator.clipboard.writeText('{{ scan.id }}');
+                                 this.querySelector('i').className='bi bi-check2';
+                                 setTimeout(() => this.querySelector('i').className='bi bi-clipboard', 1200);"
+                        title="Скопировать ID">
+                    <i class="bi bi-clipboard"></i>
+                </button>
             </h1>
             {% if scan.status.value == "success" %}
                 <span class="badge bg-success fs-6">success</span>
@@ -82,12 +90,12 @@
         <hr>
 
         <div class="d-flex gap-2">
-            <a class="btn btn-sm btn-outline-primary" href="/api/v1/scans/{{ scan.id }}/report" target="_blank">
-                <i class="bi bi-file-earmark-text"></i> HTML-отчёт
-            </a>
-            <a class="btn btn-sm btn-outline-primary" href="/api/v1/scans/{{ scan.id }}/report.pdf" target="_blank">
-                <i class="bi bi-file-earmark-pdf"></i> PDF-отчёт
-            </a>
+            <a class="btn btn-sm btn-outline-primary" href="/ui/scans/{{ scan.id }}/report" target="_blank">
+    <i class="bi bi-file-earmark-text"></i> HTML-отчёт
+</a>
+<a class="btn btn-sm btn-outline-primary" href="/ui/scans/{{ scan.id }}/report.pdf" target="_blank">
+    <i class="bi bi-file-earmark-pdf"></i> PDF-отчёт
+</a>
         </div>
     </div>
 </div>
@@ -109,12 +117,13 @@
 {% else %}
     <div class="d-flex flex-column gap-2">
         {% for v in vulnerabilities %}
-        <div class="card card-scan shadow-sm">
+        <div class="card card-scan shadow-sm fade-in-card"
+             style="animation-delay: {{ loop.index0 * 40 }}ms">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <h3 class="h6 mb-0">
                         {% if v.severity.value == "critical" %}
-                            <span class="badge bg-danger">CRITICAL</span>
+                            <span class="badge bg-danger badge-critical">CRITICAL</span>
                         {% elif v.severity.value == "high" %}
                             <span class="badge" style="background:#fd7e14;">HIGH</span>
                         {% elif v.severity.value == "medium" %}
@@ -127,12 +136,12 @@
                         {{ v.title }}
                     </h3>
                     {% if v.cwe %}
-                    <span class="badge bg-light text-dark border">
-                        <a href="https://cwe.mitre.org/data/definitions/{{ v.cwe|replace('CWE-', '') }}.html"
-                           class="text-decoration-none text-dark" target="_blank">
-                            {{ v.cwe }}
-                        </a>
-                    </span>
+                    <a href="https://cwe.mitre.org/data/definitions/{{ v.cwe }}.html"
+                       class="badge bg-body-secondary text-body border text-decoration-none"
+                       target="_blank"
+                       title="CWE-{{ v.cwe }}">
+                        CWE-{{ v.cwe }}
+                    </a>
                     {% endif %}
                 </div>
 
@@ -140,14 +149,21 @@
                 <p class="text-muted small mb-2">{{ v.description }}</p>
                 {% endif %}
 
+                {% if v.scanner_metadata and (v.scanner_metadata.get('file_path') or v.scanner_metadata.get('line_number')) %}
                 <div class="d-flex gap-3 small text-muted">
-                    {% if v.file_path %}
-                    <span><i class="bi bi-file-earmark-code"></i> <code>{{ v.file_path }}</code></span>
+                    {% if v.scanner_metadata.get('file_path') %}
+                    <span>
+                        <i class="bi bi-file-earmark-code"></i>
+                        <code>{{ v.scanner_metadata.get('file_path') }}</code>
+                    </span>
                     {% endif %}
-                    {% if v.line_number %}
-                    <span><i class="bi bi-hash"></i> строка {{ v.line_number }}</span>
+                    {% if v.scanner_metadata.get('line_number') %}
+                    <span>
+                        <i class="bi bi-hash"></i> строка {{ v.scanner_metadata.get('line_number') }}
+                    </span>
                     {% endif %}
                 </div>
+                {% endif %}
             </div>
         </div>
         {% endfor %}

@@ -1,10 +1,10 @@
-"""UI-страницы: login, список сканов, деталка."""
+"""UI-страницы: login, список сканов, деталка, отчёты."""
 
 import logging
 import uuid
 
 from fastapi import APIRouter, Form, HTTPException, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -18,6 +18,7 @@ from app.models.vulnerability import Vulnerability
 from app.repositories.scan import ScanRepository
 from app.repositories.user import UserRepository
 from app.schemas.scan import ScanCreate
+from app.services.report import ReportService
 from app.services.scan import ScanService
 from app.ui.deps import COOKIE_NAME, CurrentUserDep
 
@@ -71,7 +72,7 @@ async def login_submit(
         httponly=True,          # нельзя прочитать из JS — защита от XSS
         samesite="lax",         # CSRF-защита для навигации
         secure=not settings.DEBUG,  # True в проде (только HTTPS)
-        max_age=15 * 60,        # 15 минут — как access-токен
+        max_age=8 * 60 * 60,    # 8 часов — UI-сессия на рабочий день
     )
     return response
 
@@ -234,5 +235,43 @@ async def scan_detail(
             "user": user,
             "scan": scan,
             "vulnerabilities": vulnerabilities,
+        },
+    )
+
+
+# ---------- Reports (cookie-auth прокси к API-сервису) ----------
+# Ставим ПОСЛЕ /scans/{scan_id} — путь длиннее, конфликта не будет,
+# но порядок всё равно должен быть логичным: detail → его подстраницы.
+
+@router.get("/scans/{scan_id}/report", response_class=HTMLResponse)
+async def scan_report_html(
+    session: DbSessionDep,
+    user: CurrentUserDep,
+    scan_id: uuid.UUID,
+) -> HTMLResponse:
+    """HTML-отчёт по скану (cookie-auth)."""
+    report_service = ReportService(session)
+    html = await report_service.render_scan_report(scan_id)
+    if html is None:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    return HTMLResponse(content=html)
+
+
+@router.get("/scans/{scan_id}/report.pdf")
+async def scan_report_pdf(
+    session: DbSessionDep,
+    user: CurrentUserDep,
+    scan_id: uuid.UUID,
+) -> Response:
+    """PDF-отчёт по скану (cookie-auth)."""
+    report_service = ReportService(session)
+    pdf_bytes = await report_service.render_scan_report_pdf(scan_id)
+    if pdf_bytes is None:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="scan-{scan_id}.pdf"'
         },
     )

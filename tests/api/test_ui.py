@@ -90,3 +90,20 @@ async def test_scans_detail_not_found_returns_404(
     client.cookies.update(_auth_cookie(test_user))
     response = await client.get(f"/ui/scans/{uuid.uuid4()}")
     assert response.status_code == 404
+
+async def test_ui_report_html_with_auth(
+    client: AsyncClient, test_user: User, sample_scan
+) -> None:
+    """GET /ui/scans/{id}/report с cookie → 200 HTML."""
+    client.cookies.update(_auth_cookie(test_user))
+    response = await client.get(f"/ui/scans/{sample_scan.id}/report")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+
+
+async def test_ui_report_without_auth_returns_401(
+    client: AsyncClient, sample_scan
+) -> None:
+    """GET /ui/scans/{id}/report без cookie → 401."""
+    response = await client.get(f"/ui/scans/{sample_scan.id}/report")
+    assert response.status_code == 401
